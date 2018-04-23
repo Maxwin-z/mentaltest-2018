@@ -18,9 +18,12 @@ app.use(
 
 const server = http.createServer(app.callback())
 
-const io = new socket(app)
+const io = new socket(server)
 io.on('connection', ws => {
   console.log('socket connect')
+  ws.on('hi', () => {
+    console.log('client say hi')
+  })
 })
 
 server.listen(3000)
