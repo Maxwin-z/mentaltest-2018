@@ -1,0 +1,17 @@
+{
+  "name": "mentaltest-2018",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "babel-preset-es2015": "^6.24.1",
+    "koa": "^2.5.0",
+    "koa-static": "^4.0.2",
+    "socket.io": "^2.1.0"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  }
+}
