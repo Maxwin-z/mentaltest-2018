@@ -12,7 +12,10 @@ module.exports = {
   },
 
   module: {
-    rules: [{ test: /\.jsx?$/, use: ['babel-loader'], exclude: /node_modules/ }]
+    rules: [
+      { test: /\.jsx?$/, use: ['babel-loader'], exclude: /node_modules/ },
+      { test: /\.vue$/, use: ['vue-loader'] }
+    ]
   },
   mode: 'development'
 }
