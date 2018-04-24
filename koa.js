@@ -7,6 +7,8 @@ import config from './webpack/webpack.config.react.js'
 import socket from 'socket.io'
 import http from 'http'
 
+import tunnelServer from './src/tunnel.websocket.server.js'
+
 const compiler = Webpack(config)
 const app = new Koa()
 app.use(serve('public'))
@@ -19,11 +21,6 @@ app.use(
 const server = http.createServer(app.callback())
 
 const io = new socket(server)
-io.on('connection', ws => {
-  console.log('socket connect')
-  ws.on('hi', () => {
-    console.log('client say hi')
-  })
-})
+io.on('connection', tunnelServer)
 
 server.listen(3000)
