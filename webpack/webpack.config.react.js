@@ -3,7 +3,8 @@ const webpack = require('webpack')
 
 module.exports = {
   entry: {
-    react: [path.join(__dirname, '../src/main.react.js')]
+    react: [path.join(__dirname, '../src/main.react.js')],
+    vue: [path.join(__dirname, '../src/main.vue.js')]
   },
   output: {
     filename: 'bundle.[name].js',
@@ -16,6 +17,11 @@ module.exports = {
       { test: /\.jsx?$/, use: ['babel-loader'], exclude: /node_modules/ },
       { test: /\.vue$/, use: ['vue-loader'] }
     ]
+  },
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.js'
+    }
   },
   mode: 'development'
 }
