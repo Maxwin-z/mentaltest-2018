@@ -1,11 +1,25 @@
+import { onMessage, sendData } from './tunnel.websocket.server'
 const store = {
   count: 0
 }
 
-function increment() {
+onMessage(async body => {
+  console.log('get', body)
+  const { type, data } = body
+  if (type === 'increment') {
+    await increment()
+  }
+  if (type === 'decrement') {
+    await decrement()
+  }
+})
+
+async function increment() {
   ++store.count
+  sendData(store)
 }
 
-function decrement() {
+async function decrement() {
   --store.count
+  sendData(store)
 }

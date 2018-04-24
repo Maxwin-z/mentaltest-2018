@@ -17,10 +17,3 @@ class App extends Component {
 }
 
 ReactDOM.render(<App />, document.getElementById('root-react'))
-
-const socket = io({
-  transports: ['websocket']
-})
-
-socket.emit('hi')
-console.log('io', socket)

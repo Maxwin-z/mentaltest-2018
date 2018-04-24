@@ -4,6 +4,7 @@ const socket = io()
 let callback = null
 
 export function sendMessage(type, data) {
+  console.log('client send', { type, data })
   socket.emit('message', {
     type,
     data
@@ -15,5 +16,6 @@ export function onData(cb) {
 }
 
 socket.on('data', data => {
-  callback(data)
+  console.log('client ondata', data)
+  callback && callback(data)
 })

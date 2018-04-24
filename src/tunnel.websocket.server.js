@@ -1,8 +1,17 @@
-export default function onConnection(ws) {
+let callback = null
+let ws = null
+export function onConnection(ws_) {
+  ws = ws_
   ws.on('message', body => {
-    console.log(body)
+    callback && callback(body)
   })
-  ws.emit('data', {
-    count: 1000
-  })
+}
+
+export function onMessage(cb) {
+  callback = cb
+}
+
+export function sendData(data) {
+  console.log('has ws', !!ws)
+  ws && ws.emit('data', data)
 }
