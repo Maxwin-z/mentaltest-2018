@@ -1,3 +1,4 @@
+// tunnel.server interface {onMessage, sendData}, defined by env
 import { onMessage, sendData } from './tunnel.websocket.server'
 const store = {
   count: 0
