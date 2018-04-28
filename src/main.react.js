@@ -3,8 +3,6 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import Counter from './Counter.jsx'
 
-import io from 'socket.io-client'
-
 class App extends Component {
   render() {
     return (
