@@ -928,7 +928,7 @@ babel-watch:
     commander "^2.9.0"
     source-map-support "^0.4.0"
 
-babylon@^6.17.3, babylon@^6.18.0:
+babylon, babylon@^6.17.3, babylon@^6.18.0:
   version "6.18.0"
   resolved "http://registry.npm.taobao.org/babylon/download/babylon-6.18.0.tgz#af2f3b88fa6f5c1e4c634d1a0f8eac4f55b395e3"
 
