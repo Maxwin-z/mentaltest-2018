@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const babylon = require('babylon')
+const traverse = require('@babel/traverse').default
 
 const vueDir = path.join(__dirname, '../src/vue/')
 
@@ -10,11 +11,18 @@ const content = fs.readFileSync(pageFile, 'utf-8')
 
 const {template, script, style} = splitContent(content)
 
-const json = babylon.parse(script, {
+const ast = babylon.parse(script, {
   sourceType: 'module',
   plugins: ['jsx', 'flow']
 })
-console.log(json)
+traverse(ast, {
+  ImportDeclaration(path) {
+    // console.log('ImportDeclaration', path.node)
+  },
+  ObjectExpression(path) {
+    console.log('ObjectExpression', path.node.start, path.node.end)
+  }
+})
 
 function splitContent(content) {
   let template = []

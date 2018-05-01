@@ -7,6 +7,7 @@
     "start": "babel-watch koa.js"
   },
   "dependencies": {
+    "@babel/traverse": "^7.0.0-beta.46",
     "babel-core": "^6.26.0",
     "babel-loader": "^7.1.4",
     "babel-preset-env": "^1.6.1",
