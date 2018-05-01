@@ -1,6 +1,6 @@
 <template>
   <div>
-    <grid :items="items" :cell="cell" />
+    <grid v-bind:items="items" v-bind:cell="cell" />
     <div>Grid {{grid}}</div>
     <div>Counter</div>
   </div>
