@@ -3,7 +3,8 @@ const path = require('path')
 const babylon = require('babylon')
 
 // const file = path.join(__dirname, '../src/main.react.js')
-const file = path.join(__dirname, '../src/App.vue')
+// const file = path.join(__dirname, '../src/App.vue')
+const file = path.join(__dirname, '../src/vue/HomePage.vue')
 
 let code = fs.readFileSync(file).toString()
 
@@ -20,8 +21,10 @@ code
   })
 
 console.log(tpl, script)
+let result
 
-let result = babylon.parse(tpl, {
+/*
+result = babylon.parse(tpl, {
   // parse in strict mode and allow module declarations
   sourceType: 'module',
 
@@ -33,6 +36,7 @@ let result = babylon.parse(tpl, {
 })
 
 fs.writeFileSync('tpl.json', JSON.stringify(result, true, 2))
+*/
 
 result = babylon.parse(script, {
   // parse in strict mode and allow module declarations
@@ -46,5 +50,4 @@ result = babylon.parse(script, {
 })
 
 fs.writeFileSync('script.json', JSON.stringify(result, true, 2))
-
 console.log('done')
