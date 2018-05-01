@@ -1,5 +1,5 @@
 <template>
-  <div class="item">
+  <div class="item" @click="click">
     <div>Icon</div>
     <div>{{title}}</div>
   </div>
@@ -10,6 +10,11 @@ export default {
   props: {
     title: {
       type: String
+    }
+  },
+  methods: {
+    click(e) {
+      console.log(e, this.title)
     }
   }
 }
