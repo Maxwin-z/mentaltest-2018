@@ -7,7 +7,7 @@ import config from './webpack/webpack.config.react.js'
 import socket from 'socket.io'
 import http from 'http'
 
-import { onConnection } from './src/tunnel.websocket.server.js'
+import {onConnection} from './src/tunnel.websocket.server.js'
 import './src/counter.logic.js'
 
 const compiler = Webpack(config)
@@ -24,4 +24,6 @@ const server = http.createServer(app.callback())
 const io = new socket(server)
 io.on('connection', onConnection)
 
-server.listen(3000)
+server.listen(3000, () => {
+  console.log('Server: http://localhost:3000')
+})
