@@ -20,10 +20,19 @@ const ast = babylon.parse(script, {
   plugins: ['jsx', 'flow']
 })
 
+// console.log(script)
+
 traverse(ast, {
   ImportDeclaration(path) {
+    // const name = path.node.specifiers[0].local.name
+    const specifier = path.get('specifiers.0').get('local').node.name
+    const source = path.get('source').node.value
+    // TODO using package.json detect if it is a component; now use dir path
+    const isComponent = source.indexOf('components/') !== -1
+    // console.log(typeof name === typeof path)
+    console.log(specifier, source, isComponent)
     // console.log('ImportDeclaration', path.node)
-    path.remove()
+    // path.remove()
   },
   ExportDefaultDeclaration(path) {
     path.get('declaration').traverse({
@@ -42,11 +51,6 @@ traverse(ast, {
       t.CallExpression(t.Identifier('Page'), [node])
     )
     path.replaceWith(page)
-  },
-  ObjectExpression(path) {
-    // const methods = Object.keys(Object.getPrototypeOf(path)).sort()
-    // console.log(methods.join('\n'))
-    // path.skip()
   }
 })
 
