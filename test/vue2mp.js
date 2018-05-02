@@ -21,31 +21,108 @@ const ast = babylon.parse(script, {
 })
 
 // console.log(script)
+class ComponentItem {
+  constructor({specifier, source, name}) {
+    this.specifier = specifier
+    this.source = source
+    this.name = name
+  }
+}
 
+const componentItemMap = {
+  /*
+   * specifier: ComponentItem
+   */
+}
+const componentItems = []
+
+// parse imports to build components map
 traverse(ast, {
   ImportDeclaration(path) {
-    // const name = path.node.specifiers[0].local.name
     const specifier = path.get('specifiers.0').get('local').node.name
     const source = path.get('source').node.value
-    // TODO using package.json detect if it is a component; now use dir path
-    const isComponent = source.indexOf('components/') !== -1
-    // console.log(typeof name === typeof path)
-    console.log(specifier, source, isComponent)
-    // console.log('ImportDeclaration', path.node)
-    // path.remove()
-  },
+    componentItemMap[specifier] = new ComponentItem({
+      specifier,
+      source
+    })
+  }
+})
+
+// page's components map
+traverse(ast, {
   ExportDefaultDeclaration(path) {
     path.get('declaration').traverse({
-      ObjectExpression(path) {
-        console.log('ObjectExpression')
-        /* 
-        const s = t.ExpressionStatement(t.StringLiteral('HHH'))
-        path.replaceWith(s)
-        */
+      Property(componentsPath) {
+        if (
+          componentsPath.parentPath.parentPath === path &&
+          componentsPath.node.key.name === 'components'
+        ) {
+          componentsPath.traverse({
+            Property(fieldPath) {
+              const specifier = fieldPath.node.value.name
+              const name = fieldPath.node.key.name
+              const componentItem = componentItemMap[specifier]
+              componentItem.name = name
+              componentItems.push(componentItem)
+            }
+          })
+          componentsPath.remove()
+        }
       }
     })
+  }
+})
 
-    // move to Page function
+// delete import components, FIXME optimize
+traverse(ast, {
+  ImportDeclaration(path) {
+    const specifier = path.get('specifiers.0').get('local').node.name
+    if (componentItems.map((item) => item.specifier).includes(specifier)) {
+      path.remove()
+    }
+  }
+})
+
+// move methods out
+traverse(ast, {
+  ExportDefaultDeclaration(path) {
+    const properties = path.get('declaration').get('properties')
+
+    /*
+    const o = t.ObjectExpression(properties.map((_) => _.node))
+    path.get('declaration').replaceWith(o)
+
+    const o = t.ObjectExpression([
+      t.ObjectProperty(t.Identifier('uuuu'), t.StringLiteral('abc'))
+    ])
+    path.get('declaration').replaceWith(o)
+    */
+    const ps = []
+    properties.forEach((p) => {
+      ps.push(p.node)
+      if (p.node.key.name === 'methods') {
+        p
+          .get('value')
+          .get('properties')
+          .reverse()
+          .forEach((m) => {
+            console.log(m.node.key.name)
+            ps.push(m.node)
+          })
+      }
+    })
+    // const n = properties
+    const n = t.ObjectExpression(ps)
+    path.get('declaration').replaceWith(n)
+    // path
+    // .get('declaration')
+    // .replaceWith(t.ExpressionStatement(t.StringLiteral('hello')))
+  }
+})
+
+// move to Page function
+traverse(ast, {
+  ExportDefaultDeclaration(path) {
     const node = path.get('declaration').node
     const page = t.ExpressionStatement(
       t.CallExpression(t.Identifier('Page'), [node])

@@ -1,6 +1,6 @@
-import React, { Component } from 'react'
+import React, {Component} from 'react'
 
-import { sendMessage, onData } from './tunnel.websocket.client'
+import {sendMessage, onData} from './tunnel.websocket.client'
 
 export default class Counter extends Component {
   constructor() {
@@ -14,10 +14,10 @@ export default class Counter extends Component {
     this.setState(data)
   }
   increment() {
-    sendMessage('increment', { n: 1 })
+    sendMessage('increment', {n: 1})
   }
   decrement() {
-    sendMessage('decrement', { n: 1 })
+    sendMessage('decrement', {n: 1})
   }
 
   render() {
