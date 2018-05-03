@@ -16,191 +16,227 @@ const content = fs.readFileSync(pageFile, 'utf-8')
 
 const {template, script, style} = splitContent(content)
 
-const ast = babylon.parse(script, {
-  sourceType: 'module',
-  plugins: ['jsx', 'flow']
-})
+const {componentItems, ast} = script2js(script)
+// const output = generator(ast, {}, script)
+// console.log(prettier.format(output.code))
 
-// console.log(script)
-class ComponentItem {
-  constructor({specifier, source, name}) {
-    this.specifier = specifier
-    this.source = source
-    this.name = name
+function template2wxml(template) {
+  const ast = babylon.parse(template, {
+    plugins: ['jsx']
+  })
+
+  const tagMap = {
+    div: 'view'
   }
-}
 
-const componentItemMap = {
-  /*
-   * specifier: ComponentItem
-   */
-}
-const componentItems = []
-
-// parse imports to build components map
-traverse(ast, {
-  ImportDeclaration(path) {
-    const specifier = path.get('specifiers.0').get('local').node.name
-    const source = path.get('source').node.value
-    componentItemMap[specifier] = new ComponentItem({
-      specifier,
-      source
-    })
-  }
-})
-
-// page's components map
-traverse(ast, {
-  ExportDefaultDeclaration(path) {
-    path.get('declaration').traverse({
-      Property(componentsPath) {
-        if (
-          componentsPath.parentPath.parentPath === path &&
-          componentsPath.node.key.name === 'components'
-        ) {
-          componentsPath.traverse({
-            Property(fieldPath) {
-              const specifier = fieldPath.node.value.name
-              const name = fieldPath.node.key.name
-              const componentItem = componentItemMap[specifier]
-              componentItem.name = name
-              componentItems.push(componentItem)
-            }
-          })
-          componentsPath.remove()
-        }
+  traverse(ast, {
+    JSXOpeningElement(path) {
+      if (tagMap[path.node.name.name]) {
+        path.node.name.name = tagMap[path.node.name.name]
       }
-    })
-  }
-})
+    },
+    JSXClosingElement(path) {
+      if (tagMap[path.node.name.name]) {
+        path.node.name.name = tagMap[path.node.name.name]
+      }
+    }
+  })
 
-// delete import components, FIXME optimize
-traverse(ast, {
-  ImportDeclaration(path) {
-    const specifier = path.get('specifiers.0').get('local').node.name
-    if (componentItems.map((item) => item.specifier).includes(specifier)) {
-      path.remove()
+  const wxml = generator(ast, {}, template)
+  console.log(wxml.code)
+}
+
+function script2js(script) {
+  const ast = babylon.parse(script, {
+    sourceType: 'module',
+    plugins: ['jsx', 'flow']
+  })
+
+  // console.log(script)
+  class ComponentItem {
+    constructor({specifier, source, name}) {
+      this.specifier = specifier
+      this.source = source
+      this.name = name
     }
   }
-})
 
-// move methods out && move data() {obj} out as data:obj
-traverse(ast, {
-  ExportDefaultDeclaration(path) {
-    const properties = path.get('declaration').get('properties')
-
-    const props = []
-    properties.forEach((p) => {
-      if (p.node.key.name === 'methods') {
-        p
-          .get('value')
-          .get('properties')
-          .forEach((method) => {
-            props.push(method.node)
-          })
-      } else if (p.node.key.name === 'data' && p.node.method === true) {
-        p.traverse({
-          ObjectExpression(dataObjectPath) {
-            const dataObject = t.ObjectProperty(
-              t.Identifier('data'),
-              dataObjectPath.node
-            )
-            props.push(dataObject)
-          }
-        })
-      } else {
-        props.push(p.node)
-      }
-    })
-    // const n = properties
-    const newProps = t.ObjectExpression(props)
-    path.get('declaration').replaceWith(newProps)
+  const componentItemMap = {
+    /*
+   * specifier: ComponentItem
+   */
   }
-})
+  const componentItems = []
 
-// get data.members
-let members = []
-traverse(ast, {
-  ExportDefaultDeclaration(path) {
-    members = path
-      .get('declaration')
-      .get('properties')
-      .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
-      .get('value')
-      .get('properties')
-      .map((_) => _.node.key.name)
-  }
-})
-// console.log(members)
+  // parse imports to build components map
+  traverse(ast, {
+    ImportDeclaration(path) {
+      const specifier = path.get('specifiers.0').get('local').node.name
+      const source = path.get('source').node.value
+      componentItemMap[specifier] = new ComponentItem({
+        specifier,
+        source
+      })
+    }
+  })
 
-// replace this.[member] to this.data[member]
-traverse(ast, {
-  ExportDefaultDeclaration(path) {
-    path.traverse({
-      MemberExpression(path) {
-        if (path.node.object.type === 'ThisExpression') {
-          let mem = null
+  // page's components map
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      path.get('declaration').traverse({
+        Property(componentsPath) {
           if (
-            path.node.property.type === 'Identifier' &&
-            path.node.computed === false
+            componentsPath.parentPath.parentPath === path &&
+            componentsPath.node.key.name === 'components'
           ) {
-            mem = path.node.property.name
+            componentsPath.traverse({
+              Property(fieldPath) {
+                const specifier = fieldPath.node.value.name
+                const name = fieldPath.node.key.name
+                const componentItem = componentItemMap[specifier]
+                componentItem.name = name
+                componentItems.push(componentItem)
+              }
+            })
+            componentsPath.remove()
           }
-          if (path.node.property.type === 'Literal') {
-            mem = path.node.property.value
-          }
-          if (members.includes(mem)) {
-            path.get('object').replaceWithSourceString('this.data')
-            if (
-              (t.isAssignmentExpression(path.parentPath) &&
-                path.parentPath.get('left') === path) ||
-              t.isUpdateExpression(path.parentPath)
-            ) {
-              const expressStatement = path.findParent((parent) =>
-                parent.isExpressionStatement()
+        }
+      })
+    }
+  })
+
+  // delete import components, FIXME optimize
+  traverse(ast, {
+    ImportDeclaration(path) {
+      const specifier = path.get('specifiers.0').get('local').node.name
+      if (componentItems.map((item) => item.specifier).includes(specifier)) {
+        path.remove()
+      }
+    }
+  })
+
+  // move methods out && move data() {obj} out as data:obj
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      const properties = path.get('declaration').get('properties')
+
+      const props = []
+      properties.forEach((p) => {
+        if (p.node.key.name === 'methods') {
+          p
+            .get('value')
+            .get('properties')
+            .forEach((method) => {
+              props.push(method.node)
+            })
+        } else if (p.node.key.name === 'data' && p.node.method === true) {
+          p.traverse({
+            ObjectExpression(dataObjectPath) {
+              const dataObject = t.ObjectProperty(
+                t.Identifier('data'),
+                dataObjectPath.node
               )
-              if (expressStatement) {
-                // console.log('insert', expressStatement.node.start)
-                expressStatement.insertAfter(
-                  t.ExpressionStatement(
-                    t.CallExpression(
-                      t.MemberExpression(
-                        t.ThisExpression(),
-                        t.Identifier('setData')
-                      ),
-                      [
-                        t.ObjectExpression([
-                          t.ObjectProperty(
-                            t.Identifier(mem),
-                            t.Identifier(`this.data.${mem}`)
-                          )
-                        ])
-                      ]
+              props.push(dataObject)
+            }
+          })
+        } else {
+          props.push(p.node)
+        }
+      })
+      // const n = properties
+      const newProps = t.ObjectExpression(props)
+      path.get('declaration').replaceWith(newProps)
+    }
+  })
+
+  // get data.members
+  let members = []
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      members = path
+        .get('declaration')
+        .get('properties')
+        .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
+        .get('value')
+        .get('properties')
+        .map((_) => _.node.key.name)
+    }
+  })
+  // console.log(members)
+
+  // replace this.[member] to this.data[member]
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      path.traverse({
+        MemberExpression(path) {
+          if (path.node.object.type === 'ThisExpression') {
+            let mem = null
+            if (
+              path.node.property.type === 'Identifier' &&
+              path.node.computed === false
+            ) {
+              mem = path.node.property.name
+            }
+            if (path.node.property.type === 'Literal') {
+              mem = path.node.property.value
+            }
+            if (members.includes(mem)) {
+              path.get('object').replaceWithSourceString('this.data')
+              if (
+                (t.isAssignmentExpression(path.parentPath) &&
+                  path.parentPath.get('left') === path) ||
+                t.isUpdateExpression(path.parentPath)
+              ) {
+                const expressStatement = path.findParent((parent) =>
+                  parent.isExpressionStatement()
+                )
+                if (expressStatement) {
+                  // console.log('insert', expressStatement.node.start)
+                  expressStatement.insertAfter(
+                    t.ExpressionStatement(
+                      t.CallExpression(
+                        t.MemberExpression(
+                          t.ThisExpression(),
+                          t.Identifier('setData')
+                        ),
+                        [
+                          t.ObjectExpression([
+                            t.ObjectProperty(
+                              t.Identifier(mem),
+                              t.Identifier(`this.data.${mem}`)
+                            )
+                          ])
+                        ]
+                      )
                     )
                   )
-                )
+                }
               }
             }
           }
         }
-      }
-    })
-  }
-})
+      })
+    }
+  })
 
-// move to Page function
-traverse(ast, {
-  ExportDefaultDeclaration(path) {
-    const node = path.get('declaration').node
-    const page = t.ExpressionStatement(
-      t.CallExpression(t.Identifier('Page'), [node])
-    )
-    path.replaceWith(page)
-  }
-})
+  // move to Page function
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      const node = path.get('declaration').node
+      const page = t.ExpressionStatement(
+        t.CallExpression(t.Identifier('Page'), [node])
+      )
+      path.replaceWith(page)
+    }
+  })
 
-const output = generator(ast, {}, script)
-console.log(prettier.format(output.code))
+  return {
+    componentItems,
+    ast
+  }
+}
+// const output = generator(ast, {}, script)
+// console.log(prettier.format(output.code))
 
 function splitContent(content) {
   let template = []
