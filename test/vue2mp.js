@@ -115,11 +115,23 @@ traverse(ast, {
     // const n = properties
     const newProps = t.ObjectExpression(props)
     path.get('declaration').replaceWith(newProps)
-    // path
-    // .get('declaration')
-    // .replaceWith(t.ExpressionStatement(t.StringLiteral('hello')))
   }
 })
+
+// get data.members
+let members = []
+traverse(ast, {
+  ExportDefaultDeclaration(path) {
+    members = path
+      .get('declaration')
+      .get('properties')
+      .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
+      .get('value')
+      .get('properties')
+      .map((_) => _.node.key.name)
+  }
+})
+console.log(members)
 
 // move to Page function
 traverse(ast, {
