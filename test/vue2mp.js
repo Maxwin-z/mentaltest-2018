@@ -133,6 +133,57 @@ traverse(ast, {
 })
 console.log(members)
 
+// replace this.[member] to this.data[member]
+traverse(ast, {
+  ExportDefaultDeclaration(path) {
+    path.traverse({
+      MemberExpression(path) {
+        if (path.node.object.type === 'ThisExpression') {
+          let mem = null
+          if (
+            path.node.property.type === 'Identifier' &&
+            path.node.computed === false
+          ) {
+            mem = path.node.property.name
+          }
+          if (path.node.property.type === 'Literal') {
+            mem = path.node.property.value
+          }
+          if (members.includes(mem)) {
+            path.get('object').replaceWithSourceString('this.data')
+            if (
+              t.isAssignmentExpression(path.parentPath) &&
+              path.parentPath.get('left') === path
+            ) {
+              const expressStatement = path.findParent((parent) =>
+                parent.isExpressionStatement()
+              )
+              if (expressStatement) {
+                console.log('insert', expressStatement.node.start)
+                expressStatement.insertAfter(
+                  t.ExpressionStatement(
+                    t.CallExpression(
+                      t.MemberExpression(
+                        t.ThisExpression(),
+                        t.Identifier('setData')
+                      ),
+                      [
+                        t.ObjectExpression([
+                          t.ObjectProperty(t.Identifier(mem), t.Identifier(mem))
+                        ])
+                      ]
+                    )
+                  )
+                )
+              }
+            }
+          }
+        }
+      }
+    })
+  }
+})
+
 // move to Page function
 traverse(ast, {
   ExportDefaultDeclaration(path) {
