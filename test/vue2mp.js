@@ -19,16 +19,17 @@ const {template, script, style} = splitContent(content)
 const {componentItems, ast} = script2js(script)
 // const output = generator(ast, {}, script)
 // console.log(prettier.format(output.code))
+template2wxml(template)
 
 function template2wxml(template) {
   const ast = babylon.parse(template, {
     plugins: ['jsx']
   })
 
+  // replace tags
   const tagMap = {
     div: 'view'
   }
-
   traverse(ast, {
     JSXOpeningElement(path) {
       if (tagMap[path.node.name.name]) {
@@ -38,6 +39,36 @@ function template2wxml(template) {
     JSXClosingElement(path) {
       if (tagMap[path.node.name.name]) {
         path.node.name.name = tagMap[path.node.name.name]
+      }
+    }
+  })
+
+  // replace v-bind:[name]
+  traverse(ast, {
+    JSXAttribute(path) {
+      if (t.isJSXNamespacedName(path.get('name'))) {
+        const namespace = path.node.name.namespace.name
+        const name = path.node.name.name.name
+        const value = path.node.value.value
+        console.log(namespace, name, value)
+        if (namespace === 'v-bind') {
+          // prop is component
+          if (
+            componentItems
+              .map((item) => item.name.toLowerCase())
+              .includes(value)
+          ) {
+            path.node.name.namespace.name = 'generic'
+          } else {
+            path.get('name').replaceWith(t.JSXIdentifier(name))
+          }
+        }
+        if (namespace === 'v-on') {
+          // TODO: handle other events
+          if (name === 'click') {
+            path.get('name').replaceWith(t.JSXIdentifier('ontap'))
+          }
+        }
       }
     }
   })

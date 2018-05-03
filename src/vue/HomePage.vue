@@ -2,7 +2,7 @@
   <div>
     <grid v-bind:items="items" v-bind:cell="cell" />
     <div>Grid {{grid}}</div>
-    <div>Counter{{count}}<button v-on:click="e => add(e, 1)" >Add</button></div>
+    <div>Counter{{count}}<button v-on:click="add" >Add</button></div>
   </div>
 </template>
 
