@@ -131,7 +131,7 @@ traverse(ast, {
       .map((_) => _.node.key.name)
   }
 })
-console.log(members)
+// console.log(members)
 
 // replace this.[member] to this.data[member]
 traverse(ast, {
@@ -152,14 +152,15 @@ traverse(ast, {
           if (members.includes(mem)) {
             path.get('object').replaceWithSourceString('this.data')
             if (
-              t.isAssignmentExpression(path.parentPath) &&
-              path.parentPath.get('left') === path
+              (t.isAssignmentExpression(path.parentPath) &&
+                path.parentPath.get('left') === path) ||
+              t.isUpdateExpression(path.parentPath)
             ) {
               const expressStatement = path.findParent((parent) =>
                 parent.isExpressionStatement()
               )
               if (expressStatement) {
-                console.log('insert', expressStatement.node.start)
+                // console.log('insert', expressStatement.node.start)
                 expressStatement.insertAfter(
                   t.ExpressionStatement(
                     t.CallExpression(
@@ -169,7 +170,10 @@ traverse(ast, {
                       ),
                       [
                         t.ObjectExpression([
-                          t.ObjectProperty(t.Identifier(mem), t.Identifier(mem))
+                          t.ObjectProperty(
+                            t.Identifier(mem),
+                            t.Identifier(`this.data.${mem}`)
+                          )
                         ])
                       ]
                     )

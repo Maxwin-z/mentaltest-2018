@@ -20,9 +20,14 @@ export default class Counter extends Component {
     sendMessage('decrement', {n: 1})
   }
 
+  otherJsx() {
+    return <div>other jsx</div>
+  }
+
   render() {
     return (
       <div>
+        {this.otherJsx()}
         <button onClick={this.increment}>+</button>
         {this.state.count}
         <button onClick={this.decrement}>-</button>

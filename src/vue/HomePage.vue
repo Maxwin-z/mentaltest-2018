@@ -32,6 +32,8 @@ export default {
       let c = this.count
       ++c
       this.count = c
+
+      ++this.count
     },
     minus(delta) {
       this.count -= delta
