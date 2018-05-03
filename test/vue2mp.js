@@ -5,6 +5,7 @@ const babel = require('babel-core')
 const traverse = require('@babel/traverse').default
 const generator = require('babel-generator').default
 const t = require('babel-types')
+const prettier = require('prettier')
 
 // console.log(t)
 const vueDir = path.join(__dirname, '../src/vue/')
@@ -83,37 +84,37 @@ traverse(ast, {
   }
 })
 
-// move methods out
+// move methods out && move data() {obj} out as data:obj
 traverse(ast, {
   ExportDefaultDeclaration(path) {
     const properties = path.get('declaration').get('properties')
 
-    /*
-    const o = t.ObjectExpression(properties.map((_) => _.node))
-    path.get('declaration').replaceWith(o)
-
-    const o = t.ObjectExpression([
-      t.ObjectProperty(t.Identifier('uuuu'), t.StringLiteral('abc'))
-    ])
-    path.get('declaration').replaceWith(o)
-    */
-    const ps = []
+    const props = []
     properties.forEach((p) => {
-      ps.push(p.node)
       if (p.node.key.name === 'methods') {
         p
           .get('value')
           .get('properties')
-          .reverse()
-          .forEach((m) => {
-            console.log(m.node.key.name)
-            ps.push(m.node)
+          .forEach((method) => {
+            props.push(method.node)
           })
+      } else if (p.node.key.name === 'data' && p.node.method === true) {
+        p.traverse({
+          ObjectExpression(dataObjectPath) {
+            const dataObject = t.ObjectProperty(
+              t.Identifier('data'),
+              dataObjectPath.node
+            )
+            props.push(dataObject)
+          }
+        })
+      } else {
+        props.push(p.node)
       }
     })
     // const n = properties
-    const n = t.ObjectExpression(ps)
-    path.get('declaration').replaceWith(n)
+    const newProps = t.ObjectExpression(props)
+    path.get('declaration').replaceWith(newProps)
     // path
     // .get('declaration')
     // .replaceWith(t.ExpressionStatement(t.StringLiteral('hello')))
@@ -132,7 +133,7 @@ traverse(ast, {
 })
 
 const output = generator(ast, {}, script)
-console.log(output.code)
+console.log(prettier.format(output.code))
 
 function splitContent(content) {
   let template = []
