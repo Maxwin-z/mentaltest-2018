@@ -9,6 +9,7 @@ const prettier = require('prettier')
 
 // console.log(t)
 const vueDir = path.join(__dirname, '../src/vue/')
+const distDir = path.join(__dirname, '../dist')
 
 // pase page
 const pageFile = path.join(vueDir, 'HomePage.vue')
@@ -16,10 +17,71 @@ const content = fs.readFileSync(pageFile, 'utf-8')
 
 const {template, script, style} = splitContent(content)
 
-const {componentItems, ast} = script2js(script)
-// const output = generator(ast, {}, script)
+const {componentItems, components, ast} = script2js(script)
+const scriptOutput = generator(ast, {}, script)
+const code = prettier.format(scriptOutput.code)
+
 // console.log(prettier.format(output.code))
-template2wxml(template)
+const wxml = template2wxml(template)
+generateFiles()
+
+process.on('unhandledRejection', (error) => {
+  console.log('unhandledRejection', error)
+})
+
+function _mkdirs(dirpath, mode, callback) {
+  fs.exists(dirpath, function(exists) {
+    if (exists) {
+      callback(dirpath)
+    } else {
+      _mkdirs(path.dirname(dirpath), mode, function() {
+        fs.mkdir(dirpath, mode, callback)
+      })
+    }
+  })
+}
+
+async function mkdirs(dirpath) {
+  return new Promise((rs) => {
+    _mkdirs(dirpath, null, rs)
+  })
+}
+
+async function writeFile(file, content) {
+  return new Promise((rs) => {
+    fs.writeFile(file, content, rs)
+  })
+}
+
+async function generateFiles() {
+  await mkdirs(path.join(distDir, 'pages'))
+  await mkdirs(path.join(distDir, 'components'))
+  // hardcode test
+  // create page dir
+  const page = 'homepage'
+  const pageDir = path.join(distDir, `pages/${page}`)
+  await mkdirs(pageDir)
+  // generate page.json
+  const pageJsonFile = path.join(pageDir, `${page}.json`)
+  const pageJson = {
+    usingComponents: {}
+  }
+  components.map((component) => {
+    pageJson.usingComponents[
+      component
+    ] = `../../components/${component}/${component}`
+  })
+  await writeFile(pageJsonFile, JSON.stringify(pageJson, true, 2))
+
+  // write page.js
+  await writeFile(path.join(pageDir, `${page}.js`), code)
+
+  // write page.wxml
+  await writeFile(path.join(pageDir, `${page}.wxml`), wxml)
+
+  // write page.wxss
+  await writeFile(path.join(pageDir, `${page}.wxss`), style || '')
+}
 
 function template2wxml(template) {
   const ast = babylon.parse(template, {
@@ -53,11 +115,7 @@ function template2wxml(template) {
         console.log(namespace, name, value)
         if (namespace === 'v-bind') {
           // prop is component
-          if (
-            componentItems
-              .map((item) => item.name.toLowerCase())
-              .includes(value)
-          ) {
+          if (components.includes(value)) {
             path.node.name.namespace.name = 'generic'
           } else {
             path.get('name').replaceWith(t.JSXIdentifier(name))
@@ -74,7 +132,11 @@ function template2wxml(template) {
   })
 
   const wxml = generator(ast, {}, template)
-  console.log(wxml.code)
+  return prettier
+    .format(wxml.code, {
+      semi: false
+    })
+    .replace(/^;/, '')
 }
 
 function script2js(script) {
@@ -263,6 +325,7 @@ function script2js(script) {
 
   return {
     componentItems,
+    components: componentItems.map((c) => c.name.toLowerCase()),
     ast
   }
 }
