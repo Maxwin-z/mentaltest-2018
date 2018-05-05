@@ -1,4 +1,7 @@
-export function replaceJSXTag(ast, tagMap) {
+const traverse = require('@babel/traverse').default
+const t = require('babel-types')
+
+function replaceJSXTag(ast, tagMap) {
   traverse(ast, {
     JSXOpeningElement(path) {
       if (tagMap[path.node.name.name]) {
@@ -13,14 +16,14 @@ export function replaceJSXTag(ast, tagMap) {
   })
 }
 
-export function replaceJSXAttribute(ast) {
+function replaceJSXAttribute(ast, components) {
   traverse(ast, {
     JSXAttribute(path) {
       if (t.isJSXNamespacedName(path.get('name'))) {
         const namespace = path.node.name.namespace.name
         const name = path.node.name.name.name
         const value = path.node.value.value
-        console.log(namespace, name, value)
+        // console.log(namespace, name, value)
         if (namespace === 'v-bind') {
           // prop is component
           if (components.includes(value)) {
@@ -40,7 +43,7 @@ export function replaceJSXAttribute(ast) {
   })
 }
 
-export function getImportedComponents(ast) {
+function getImportedComponents(ast) {
   const componentItemMap = {}
   const componentItems = []
 
@@ -84,7 +87,7 @@ export function getImportedComponents(ast) {
   return componentItems
 }
 
-export function removeImports(ast, specifiers) {
+function removeImports(ast, specifiers) {
   traverse(ast, {
     ImportDeclaration(path) {
       const specifier = path.get('specifiers.0').get('local').node.name
@@ -95,19 +98,19 @@ export function removeImports(ast, specifiers) {
   })
 }
 
-export function moveMethodsOut(ast) {
+function moveMethodsOut(ast) {
   traverse(ast, {
     ExportDefaultDeclaration(path) {
       const props = []
       path
         .get('declaration')
         .get('properties')
-        .forEach((p) => {
+        .forEach(p => {
           if (p.node.key.name === 'methods') {
             p
               .get('value')
               .get('properties')
-              .forEach((method) => {
+              .forEach(method => {
                 props.push(method.node)
               })
           } else {
@@ -120,14 +123,14 @@ export function moveMethodsOut(ast) {
   })
 }
 
-export function moveDataOut(ast) {
+function moveDataOut(ast) {
   traverse(ast, {
     ExportDefaultDeclaration(path) {
       const props = []
       path
         .get('declaration')
         .get('properties')
-        .forEach((p) => {
+        .forEach(p => {
           if (p.node.key.name === 'data' && p.node.method === true) {
             p.traverse({
               ObjectExpression(dataObjectPath) {
@@ -149,33 +152,33 @@ export function moveDataOut(ast) {
 }
 
 // used for change this[property] to this.data[property]
-export function getDataProperties(ast) {
+function getDataProperties(ast) {
   const properties = []
   traverse(ast, {
     ExportDefaultDeclaration(path) {
       path
         .get('declaration')
         .get('properties')
-        .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
+        .find(p => t.isIdentifier(p.node.key, { name: 'data' }))
         .get('value')
         .get('properties')
-        .forEach((p) => properties.push(p.node.key.name))
+        .forEach(p => properties.push(p.node.key.name))
     }
   })
   return properties
 }
 
 // used for remove component properties
-export function removeDataProperties(ast, properties) {
+function removeDataPropertiesByValue(ast, properties) {
   traverse(ast, {
     ExportDefaultDeclaration(path) {
       path
         .get('declaration')
         .get('properties')
-        .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
+        .find(p => t.isIdentifier(p.node.key, { name: 'data' }))
         .get('value')
         .get('properties')
-        .forEach((p) => {
+        .forEach(p => {
           if (properties.includes(p.node.value.name)) {
             p.remove()
           }
@@ -184,7 +187,7 @@ export function removeDataProperties(ast, properties) {
   })
 }
 
-export function replacePropertyAsData(ast, properties) {
+function replacePropertyAsData(ast, properties) {
   // replace this.[member] to this.data[member]
   traverse(ast, {
     ExportDefaultDeclaration(path) {
@@ -208,7 +211,7 @@ export function replacePropertyAsData(ast, properties) {
                   path.parentPath.get('left') === path) ||
                 t.isUpdateExpression(path.parentPath)
               ) {
-                const expressStatement = path.findParent((parent) =>
+                const expressStatement = path.findParent(parent =>
                   parent.isExpressionStatement()
                 )
                 if (expressStatement) {
@@ -241,7 +244,7 @@ export function replacePropertyAsData(ast, properties) {
   })
 }
 
-export function moveExportToFunction(ast, fnName) {
+function moveExportToFunction(ast, fnName) {
   traverse(ast, {
     ExportDefaultDeclaration(path) {
       const node = path.get('declaration').node
@@ -251,4 +254,17 @@ export function moveExportToFunction(ast, fnName) {
       path.replaceWith(page)
     }
   })
+}
+
+module.exports = {
+  replaceJSXTag,
+  replaceJSXAttribute,
+  getImportedComponents,
+  removeImports,
+  moveMethodsOut,
+  moveDataOut,
+  getDataProperties,
+  removeDataPropertiesByValue,
+  replacePropertyAsData,
+  moveExportToFunction
 }
