@@ -9,7 +9,7 @@
 <script>
 import Grid from './components/grid.vue'
 import Cell from './components/cell.vue'
-import {sendMessage, onData} from '../tunnel.websocket.client'
+// import {sendMessage, onData} from '../tunnel.websocket.client'
 
 export default {
   components: {

@@ -242,7 +242,7 @@ function script2js(script) {
     }
   })
 
-  // get data.members
+  // get data.members && remove component props
   let members = []
   traverse(ast, {
     ExportDefaultDeclaration(path) {
@@ -252,7 +252,16 @@ function script2js(script) {
         .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
         .get('value')
         .get('properties')
-        .map((_) => _.node.key.name)
+        .map((p) => {
+          if (
+            componentItems.map((_) => _.specifier).includes(p.node.value.name)
+          ) {
+            p.remove()
+            return null
+          } else {
+            return p.node.key.name
+          }
+        })
     }
   })
   // console.log(members)
