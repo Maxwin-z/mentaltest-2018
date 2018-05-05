@@ -1,4 +1,4 @@
-export default function splitContent(content) {
+function splitContent(content) {
   let template = []
   let script = []
   let style = []
@@ -34,4 +34,8 @@ export default function splitContent(content) {
     script: script.join('\n'),
     style: style.join('\n')
   }
+}
+
+module.exports = {
+  splitContent
 }
