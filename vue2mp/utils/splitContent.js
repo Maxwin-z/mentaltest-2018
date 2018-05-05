@@ -36,6 +36,17 @@ function splitContent(content) {
   }
 }
 
+function generatePageConfig(components) {
+  const ret = {usingComponents: {}}
+  components.map((component) => {
+    ret.usingComponents[
+      component
+    ] = `../../components/${component}/${component}`
+  })
+  return ret
+}
+
 module.exports = {
-  splitContent
+  splitContent,
+  generatePageConfig
 }
