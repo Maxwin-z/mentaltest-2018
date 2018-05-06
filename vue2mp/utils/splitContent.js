@@ -1,3 +1,6 @@
+const fs = require('fs')
+const path = require('path')
+
 function splitContent(content) {
   let template = []
   let script = []
@@ -46,7 +49,45 @@ function generatePageConfig(components) {
   return ret
 }
 
+function _mkdirs(dirpath, mode, callback) {
+  fs.exists(dirpath, function(exists) {
+    if (exists) {
+      callback(null)
+    } else {
+      _mkdirs(path.dirname(dirpath), mode, function() {
+        fs.mkdir(dirpath, mode, callback)
+      })
+    }
+  })
+}
+
+async function mkdirs(dirpath) {
+  return new Promise((resolve, reject) => {
+    _mkdirs(dirpath, null, (error) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+  })
+}
+
+async function writeFile(file, content) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(file, content, (error) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+  })
+}
+
 module.exports = {
   splitContent,
-  generatePageConfig
+  generatePageConfig,
+  mkdirs,
+  writeFile
 }

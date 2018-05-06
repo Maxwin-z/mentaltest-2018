@@ -9,17 +9,36 @@ const astUtils = require('./utils/ast')
 const vueDir = path.join(__dirname, '../src/vue')
 const distDir = path.join(__dirname, '../dist')
 
-const pagename = 'homepage.vue'
+const pagename = 'homepage'
 convertPage(pagename)
 
-function convertPage(pagename) {
-  const pageFile = path.join(vueDir, `${pagename}`)
+process.on('unhandledRejection', (error) => {
+  console.error('unhandledRejection', error)
+})
+
+async function convertPage(pagename) {
+  const pageFile = path.join(vueDir, `${pagename}.vue`)
   const content = fs.readFileSync(pageFile, 'utf-8')
   const {template, script, style} = utils.splitContent(content)
+  // convert script
   const {code, componentItems} = script2js(script)
-  const pageJSON = utils.generatePageConfig(
-    componentItems.map((_) => _.specifier.toLowerCase())
+  const components = componentItems.map((_) => _.specifier.toLowerCase())
+  const pageJSON = utils.generatePageConfig(components)
+  const pageDistPath = path.join(distDir, `pages/${pagename}/`)
+
+  await utils.mkdirs(pageDistPath)
+  await utils.writeFile(path.join(pageDistPath, `${pagename}.js`), code)
+  await utils.writeFile(
+    path.join(pageDistPath, `${pagename}.json`),
+    JSON.stringify(pageJSON, true, 2)
   )
+
+  // convert template
+  const wxml = template2wxml(template, components)
+  await utils.writeFile(path.join(pageDistPath, `${pagename}.wxml`), wxml)
+
+  // convert style
+  await utils.writeFile(path.join(pageDistPath, `${pagename}.wxss`), style)
   console.log(code, pageJSON)
 }
 
@@ -41,4 +60,24 @@ function script2js(script) {
     code,
     componentItems
   }
+}
+
+function template2wxml(template, components) {
+  const ast = babylon.parse(template, {
+    plugins: ['jsx']
+  })
+
+  // replace tags
+  const tagMap = {
+    div: 'view'
+  }
+  astUtils.replaceJSXTag(ast, tagMap)
+  astUtils.replaceJSXAttribute(ast, components)
+
+  const wxml = generator(ast, {}, template)
+  return prettier
+    .format(wxml.code, {
+      semi: false
+    })
+    .replace(/^;/, '')
 }
