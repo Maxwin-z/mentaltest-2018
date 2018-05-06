@@ -39,7 +39,18 @@ async function convertPage(pagename) {
 
   // convert style
   await utils.writeFile(path.join(pageDistPath, `${pagename}.wxss`), style)
-  console.log(code, pageJSON)
+  // console.log(code, pageJSON)
+
+  // convert components
+  Promise.all(components.map(convertComponent))
+}
+
+async function convertComponent(component) {
+  console.log(`start convertComponent ${component}`)
+  const compFile = path.join(vueDir, `/components/${component}.vue`)
+  const content = fs.readFileSync(compFile, 'utf-8')
+  const {template, script, style} = utils.splitContent(content)
+  console.log(template)
 }
 
 function script2js(script) {
@@ -49,9 +60,11 @@ function script2js(script) {
   })
 
   const componentItems = astUtils.getImportedComponents(ast)
-  astUtils.removeImports(ast, componentItems.map((_) => _.specifier))
+  const components = componentItems.map((_) => _.specifier)
+  astUtils.removeImports(ast, components)
   astUtils.moveMethodsOut(ast)
   astUtils.moveDataOut(ast)
+  astUtils.removeDataPropertiesByValue(ast, components)
   const dataProperties = astUtils.getDataProperties(ast)
   astUtils.replacePropertyAsData(ast, dataProperties)
   astUtils.moveExportToFunction(ast, 'Page')
