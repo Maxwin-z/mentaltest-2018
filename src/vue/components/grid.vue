@@ -2,7 +2,7 @@
   <div class="r">
     <div class="flex-row" v-for="rows in items">
       <div class="flex1" v-for="item in rows">
-       <component :is="cell" :title="item" /> 
+       <component v-bind:is="cell" v-bind:title="item" /> 
       </div>
     </div>
   </div>

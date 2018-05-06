@@ -1,5 +1,5 @@
 <template>
-  <div class="item" @click="click">
+  <div class="item" v-on:click="click">
     <div>Icon</div>
     <div>{{title}}</div>
   </div>

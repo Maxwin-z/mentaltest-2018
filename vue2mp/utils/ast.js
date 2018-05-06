@@ -171,13 +171,16 @@ function getDataProperties(ast) {
   const properties = []
   traverse(ast, {
     ExportDefaultDeclaration(path) {
-      path
+      const dataPath = path
         .get('declaration')
         .get('properties')
         .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
-        .get('value')
-        .get('properties')
-        .forEach((p) => properties.push(p.node.key.name))
+      if (dataPath) {
+        dataPath
+          .get('value')
+          .get('properties')
+          .forEach((p) => properties.push(p.node.key.name))
+      }
     }
   })
   return properties
@@ -187,17 +190,20 @@ function getDataProperties(ast) {
 function removeDataPropertiesByValue(ast, properties) {
   traverse(ast, {
     ExportDefaultDeclaration(path) {
-      path
+      const dataPath = path
         .get('declaration')
         .get('properties')
         .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
-        .get('value')
-        .get('properties')
-        .forEach((p) => {
-          if (properties.includes(p.node.value.name)) {
-            p.remove()
-          }
-        })
+      if (dataPath) {
+        dataPath
+          .get('value')
+          .get('properties')
+          .forEach((p) => {
+            if (properties.includes(p.node.value.name)) {
+              p.remove()
+            }
+          })
+      }
     }
   })
 }

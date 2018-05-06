@@ -51,6 +51,20 @@ async function convertComponent(component) {
   const content = fs.readFileSync(compFile, 'utf-8')
   const {template, script, style} = utils.splitContent(content)
   console.log(template)
+  const {code, componentItems} = componentScript2js(script)
+  const components = componentItems.map((_) => _.specifier)
+  const compJSON = utils.generatePageConfig(components)
+  const compDistPath = path.join(distDir, `components/${component}/`)
+
+  await utils.mkdirs(compDistPath)
+  await utils.writeFile(path.join(compDistPath, `${component}.js`), code)
+  await utils.writeFile(
+    path.join(compDistPath, `${component}.json`),
+    JSON.stringify(compJSON, true, 2)
+  )
+  const wxml = template2wxml(template, components)
+  await utils.writeFile(path.join(compDistPath, `${component}.wxml`), wxml)
+  await utils.writeFile(path.join(compDistPath, `${pagename}.wxss`), style)
 }
 
 function script2js(script) {
@@ -93,4 +107,27 @@ function template2wxml(template, components) {
       semi: false
     })
     .replace(/^;/, '')
+}
+
+// component
+function componentScript2js(script) {
+  const ast = babylon.parse(script, {
+    sourceType: 'module',
+    plugins: ['jsx', 'flow']
+  })
+
+  // TODO sub components
+  const componentItems = astUtils.getImportedComponents(ast)
+  const components = componentItems.map((_) => _.specifier)
+  astUtils.removeImports(ast, components)
+  astUtils.moveDataOut(ast)
+  astUtils.removeDataPropertiesByValue(ast, components)
+  const dataProperties = astUtils.getDataProperties(ast)
+  astUtils.replacePropertyAsData(ast, dataProperties)
+  astUtils.moveExportToFunction(ast, 'Component')
+  const code = prettier.format(generator(ast, {}, script).code)
+  return {
+    code,
+    componentItems
+  }
 }
