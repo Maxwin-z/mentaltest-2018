@@ -7,19 +7,18 @@
 </template>
 
 <script>
-import Grid from './components/grid.vue'
-import Cell from './components/cell.vue'
-// import {sendMessage, onData} from '../tunnel.websocket.client'
+import grid from './components/grid.vue'
+import cell from './components/cell.vue'
 
 export default {
   components: {
-    Grid,
-    Cell
+    grid,
+    cell
   },
   data() {
     return {
       count: 0,
-      cell: Cell,
+      cell: cell,
       grid: 'test',
       items: new Array(5)
         .fill(0)
