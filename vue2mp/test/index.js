@@ -108,6 +108,24 @@ export default {
     )
   })
 
+  it('renameProperty', () => {
+    const code = `
+export default {
+  props: {}
+}
+    `
+    const ast = parse(code)
+    util.renameProperty(ast, {
+      props: 'properties'
+    })
+    assert.equal(
+      ast.program.body[0].declaration.properties[0].key.name,
+      'properties'
+    )
+    // const ret = gen(ast, code)
+    // console.log(ret)
+  })
+
   it('getDataProperties', () => {
     const code = `
 export default {

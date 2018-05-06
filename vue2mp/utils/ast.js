@@ -105,12 +105,12 @@ function moveMethodsOut(ast) {
       path
         .get('declaration')
         .get('properties')
-        .forEach(p => {
+        .forEach((p) => {
           if (p.node.key.name === 'methods') {
             p
               .get('value')
               .get('properties')
-              .forEach(method => {
+              .forEach((method) => {
                 props.push(method.node)
               })
           } else {
@@ -130,7 +130,7 @@ function moveDataOut(ast) {
       path
         .get('declaration')
         .get('properties')
-        .forEach(p => {
+        .forEach((p) => {
           if (p.node.key.name === 'data' && p.node.method === true) {
             p.traverse({
               ObjectExpression(dataObjectPath) {
@@ -151,6 +151,21 @@ function moveDataOut(ast) {
   })
 }
 
+function renameProperty(ast, propertyMap) {
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      path
+        .get('declaration')
+        .get('properties')
+        .forEach((p) => {
+          if (propertyMap[p.node.key.name]) {
+            p.node.key.name = propertyMap[p.node.key.name]
+          }
+        })
+    }
+  })
+}
+
 // used for change this[property] to this.data[property]
 function getDataProperties(ast) {
   const properties = []
@@ -159,10 +174,10 @@ function getDataProperties(ast) {
       path
         .get('declaration')
         .get('properties')
-        .find(p => t.isIdentifier(p.node.key, { name: 'data' }))
+        .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
         .get('value')
         .get('properties')
-        .forEach(p => properties.push(p.node.key.name))
+        .forEach((p) => properties.push(p.node.key.name))
     }
   })
   return properties
@@ -175,10 +190,10 @@ function removeDataPropertiesByValue(ast, properties) {
       path
         .get('declaration')
         .get('properties')
-        .find(p => t.isIdentifier(p.node.key, { name: 'data' }))
+        .find((p) => t.isIdentifier(p.node.key, {name: 'data'}))
         .get('value')
         .get('properties')
-        .forEach(p => {
+        .forEach((p) => {
           if (properties.includes(p.node.value.name)) {
             p.remove()
           }
@@ -211,7 +226,7 @@ function replacePropertyAsData(ast, properties) {
                   path.parentPath.get('left') === path) ||
                 t.isUpdateExpression(path.parentPath)
               ) {
-                const expressStatement = path.findParent(parent =>
+                const expressStatement = path.findParent((parent) =>
                   parent.isExpressionStatement()
                 )
                 if (expressStatement) {
@@ -263,6 +278,7 @@ module.exports = {
   removeImports,
   moveMethodsOut,
   moveDataOut,
+  renameProperty,
   getDataProperties,
   removeDataPropertiesByValue,
   replacePropertyAsData,
