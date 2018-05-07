@@ -44,6 +44,7 @@ function replaceJSXAttribute(ast, components) {
 }
 
 function replaceJSXGenericComponent(ast) {
+  const genericMap = {}
   traverse(ast, {
     JSXElement(path) {
       if (
@@ -63,6 +64,7 @@ function replaceJSXGenericComponent(ast) {
         if (compName === null) {
           throw new Error(`cannot find component name in ${path.node}`)
         }
+        genericMap[compName] = true
         path.node.openingElement.name.name = compName
         if (path.node.closingElement) {
           path.node.closingElement.name.name = compName
@@ -70,6 +72,7 @@ function replaceJSXGenericComponent(ast) {
       }
     }
   })
+  return genericMap
 }
 
 function getImportedComponents(ast) {

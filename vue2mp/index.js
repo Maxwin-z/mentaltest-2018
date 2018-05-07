@@ -34,7 +34,7 @@ async function convertPage(pagename) {
   )
 
   // convert template
-  const wxml = template2wxml(template, components)
+  const {wxml} = template2wxml(template, components)
   await utils.writeFile(path.join(pageDistPath, `${pagename}.wxml`), wxml)
 
   // convert style
@@ -62,9 +62,20 @@ async function convertComponent(component) {
     path.join(compDistPath, `${component}.json`),
     JSON.stringify(compJSON, true, 2)
   )
-  const wxml = template2wxml(template, components)
+  const {wxml, componentGenerics} = template2wxml(template, components)
   await utils.writeFile(path.join(compDistPath, `${component}.wxml`), wxml)
-  await utils.writeFile(path.join(compDistPath, `${pagename}.wxss`), style)
+  await utils.writeFile(path.join(compDistPath, `${component}.wxss`), style)
+  await utils.writeFile(
+    path.join(compDistPath, `${component}.json`),
+    JSON.stringify(
+      {
+        component: true,
+        componentGenerics
+      },
+      true,
+      2
+    )
+  )
 }
 
 function script2js(script) {
@@ -100,13 +111,17 @@ function template2wxml(template, components) {
   }
   astUtils.replaceJSXTag(ast, tagMap)
   astUtils.replaceJSXAttribute(ast, components)
+  const genericMap = astUtils.replaceJSXGenericComponent(ast)
 
   const wxml = generator(ast, {}, template)
-  return prettier
-    .format(wxml.code, {
-      semi: false
-    })
-    .replace(/^;/, '')
+  return {
+    wxml: prettier
+      .format(wxml.code, {
+        semi: false
+      })
+      .replace(/^;/, ''),
+    componentGenerics: genericMap
+  }
 }
 
 // component
