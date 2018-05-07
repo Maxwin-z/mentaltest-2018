@@ -41,7 +41,7 @@ describe('ast', function() {
     const ret = gen(ast, code, true)
     assert.equal(
       ret,
-      '<div item="itemData" generic:cell="cellComponent">A</div>'
+      '<div item="{{itemData}}" generic:cell="cellComponent">A</div>'
     )
   })
 
@@ -58,6 +58,20 @@ describe('ast', function() {
     assert(ret.indexOf('component') === -1)
     assert(ret.indexOf('<cell ') >= 0)
     assert(ret.indexOf('</cell>') >= 0)
+  })
+
+  it('replaceJSXFor', () => {
+    const code = `
+<div>
+  <div v-for="val in object"></div>
+  <div v-for="(val, key) in object"></div>
+</div>
+    `
+    const ast = parse(code)
+    util.replaceJSXFor(ast)
+    const ret = gen(ast, code, true)
+    // FIXME view log plz
+    // console.log(ret)
   })
 
   it('getImportedComponents', () => {
@@ -108,7 +122,9 @@ export default {
   data() {
     return {
       a: 1,
-      b: 2
+      b: {
+        c: 2
+      }
     }
   }
 }

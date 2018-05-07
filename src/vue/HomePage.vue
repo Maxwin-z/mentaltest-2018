@@ -3,6 +3,17 @@
     <grid v-bind:items="items" v-bind:cell="cell" />
     <div>Grid {{grid}}</div>
     <div>Counter{{count}}<button v-on:click="add" >Add</button></div>
+    <div v-for="(val, key, index) in array">
+      val: {{val}}; 
+      key: {{key}};
+      index: {{index}}
+    </div>
+    <div v-for="(val, key, index) in obj">
+      val: {{val}}; 
+      key: {{key}};
+      index: {{index}}
+    </div>
+
   </div>
 </template>
 
@@ -20,6 +31,11 @@ export default {
       count: 0,
       cell: cell,
       grid: 'test',
+      array: [1, 2, 3, 4],
+      obj: {
+        a: 1,
+        b: 'ssss'
+      },
       items: new Array(5)
         .fill(0)
         .map((_, i) => new Array(3).fill(0).map((_, j) => `${i}-${j}`))

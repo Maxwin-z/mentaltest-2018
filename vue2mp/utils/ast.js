@@ -30,6 +30,10 @@ function replaceJSXAttribute(ast, components) {
             path.node.name.namespace.name = 'generic'
           } else {
             path.get('name').replaceWith(t.JSXIdentifier(name))
+            if (name !== 'is') {
+              // DONOT replace <component v-bind:is="cell" />
+              path.get('value').replaceWith(t.StringLiteral(`{{${value}}}`))
+            }
           }
         }
         if (namespace === 'v-on') {
@@ -73,6 +77,48 @@ function replaceJSXGenericComponent(ast) {
     }
   })
   return genericMap
+}
+
+function replaceJSXFor(ast) {
+  traverse(ast, {
+    JSXAttribute(path) {
+      if (path.node.name.name === 'v-for') {
+        const vfor = path.node.value.value
+        const [items, obj] = vfor.split(' in ')
+        const [val, index] = items.replace(/(^\(|\)$)/g, '').split(',')
+        if (index) {
+          path.insertAfter(
+            t.JSXAttribute(
+              t.JSXNamespacedName(
+                t.JSXIdentifier('wx'),
+                t.JSXIdentifier('for-index')
+              ),
+              t.StringLiteral(index.trim())
+            )
+          )
+        }
+
+        path.insertAfter(
+          t.JSXAttribute(
+            t.JSXNamespacedName(
+              t.JSXIdentifier('wx'),
+              t.JSXIdentifier('for-item')
+            ),
+            t.StringLiteral(val.trim())
+          )
+        )
+
+        path.insertAfter(
+          t.JSXAttribute(
+            t.JSXNamespacedName(t.JSXIdentifier('wx'), t.JSXIdentifier('for')),
+            t.StringLiteral(`{{${obj.trim()}}}`)
+          )
+        )
+
+        path.remove()
+      }
+    }
+  })
 }
 
 function getImportedComponents(ast) {
@@ -171,6 +217,7 @@ function moveDataOut(ast) {
                   dataObjectPath.node
                 )
                 props.push(dataObject)
+                dataObjectPath.skip()
               }
             })
           } else {
@@ -313,6 +360,7 @@ module.exports = {
   replaceJSXTag,
   replaceJSXAttribute,
   replaceJSXGenericComponent,
+  replaceJSXFor,
   getImportedComponents,
   removeImports,
   moveMethodsOut,

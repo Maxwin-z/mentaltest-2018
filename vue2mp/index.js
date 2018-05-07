@@ -70,6 +70,7 @@ async function convertComponent(component) {
     JSON.stringify(
       {
         component: true,
+        usingComponents: {},
         componentGenerics
       },
       true,
@@ -111,6 +112,7 @@ function template2wxml(template, components) {
   }
   astUtils.replaceJSXTag(ast, tagMap)
   astUtils.replaceJSXAttribute(ast, components)
+  astUtils.replaceJSXFor(ast)
   const genericMap = astUtils.replaceJSXGenericComponent(ast)
 
   const wxml = generator(ast, {}, template)
@@ -136,6 +138,9 @@ function componentScript2js(script) {
   const components = componentItems.map((_) => _.specifier)
   astUtils.removeImports(ast, components)
   astUtils.moveDataOut(ast)
+  astUtils.renameProperty(ast, {
+    props: 'properties'
+  })
   astUtils.removeDataPropertiesByValue(ast, components)
   const dataProperties = astUtils.getDataProperties(ast)
   astUtils.replacePropertyAsData(ast, dataProperties)
