@@ -43,6 +43,35 @@ function replaceJSXAttribute(ast, components) {
   })
 }
 
+function replaceJSXGenericComponent(ast) {
+  traverse(ast, {
+    JSXElement(path) {
+      if (
+        t.isJSXIdentifier(path.node.openingElement.name, {name: 'component'})
+      ) {
+        // get 'is' property
+        let compName = null
+        path
+          .get('openingElement')
+          .get('attributes')
+          .forEach((prop) => {
+            if (prop.node.name.name === 'is') {
+              compName = prop.node.value.value
+              prop.remove()
+            }
+          })
+        if (compName === null) {
+          throw new Error(`cannot find component name in ${path.node}`)
+        }
+        path.node.openingElement.name.name = compName
+        if (path.node.closingElement) {
+          path.node.closingElement.name.name = compName
+        }
+      }
+    }
+  })
+}
+
 function getImportedComponents(ast) {
   const componentItemMap = {}
   const componentItems = []
@@ -280,6 +309,7 @@ function moveExportToFunction(ast, fnName) {
 module.exports = {
   replaceJSXTag,
   replaceJSXAttribute,
+  replaceJSXGenericComponent,
   getImportedComponents,
   removeImports,
   moveMethodsOut,

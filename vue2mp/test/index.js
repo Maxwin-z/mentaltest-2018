@@ -45,6 +45,21 @@ describe('ast', function() {
     )
   })
 
+  it('replaceJSXGenericComponent', () => {
+    const code = `
+    <div>
+      <component is="cell" title="item" />
+      <component is="cell" title="item"></component>
+    </div>
+      `
+    const ast = parse(code)
+    util.replaceJSXGenericComponent(ast)
+    const ret = gen(ast, code, true)
+    assert(ret.indexOf('component') === -1)
+    assert(ret.indexOf('<cell ') >= 0)
+    assert(ret.indexOf('</cell>') >= 0)
+  })
+
   it('getImportedComponents', () => {
     const code = `
 import cell from 'cell'
