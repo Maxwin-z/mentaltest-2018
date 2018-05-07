@@ -1,7 +1,7 @@
 <template>
   <div class="r">
-    <div class="flex-row" v-for="rows in items">
-      <div class="flex1" v-for="item in rows">
+    <div class="flex-row" v-for="(rows, idx) in items" v-bind:key="idx">
+      <div class="flex1" v-for="item in rows" v-bind:key="item">
        <component v-bind:is="cell" v-bind:title="item" /> 
       </div>
     </div>

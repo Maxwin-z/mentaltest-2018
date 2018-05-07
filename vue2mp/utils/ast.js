@@ -83,22 +83,32 @@ function replaceJSXFor(ast) {
   traverse(ast, {
     JSXAttribute(path) {
       if (path.node.name.name === 'v-for') {
+        // find reuse key
+        path.parentPath.get('attributes').forEach((attr) => {
+          if (attr.node.name.name === 'key') {
+            attr
+              .get('name')
+              .replaceWith(
+                t.JSXNamespacedName(
+                  t.JSXIdentifier('wx'),
+                  t.JSXIdentifier('key')
+                )
+              )
+          }
+        })
+
         const vfor = path.node.value.value
         const [items, obj] = vfor.split(' in ')
         const [val, index] = items.replace(/(^\(|\)$)/g, '').split(',')
-        if (index) {
-          path.insertAfter(
-            t.JSXAttribute(
-              t.JSXNamespacedName(
-                t.JSXIdentifier('wx'),
-                t.JSXIdentifier('for-index')
-              ),
-              t.StringLiteral(index.trim())
-            )
-          )
-        }
 
-        path.insertAfter(
+        path.insertBefore(
+          t.JSXAttribute(
+            t.JSXNamespacedName(t.JSXIdentifier('wx'), t.JSXIdentifier('for')),
+            t.StringLiteral(`{{${obj.trim()}}}`)
+          )
+        )
+
+        path.insertBefore(
           t.JSXAttribute(
             t.JSXNamespacedName(
               t.JSXIdentifier('wx'),
@@ -108,12 +118,17 @@ function replaceJSXFor(ast) {
           )
         )
 
-        path.insertAfter(
-          t.JSXAttribute(
-            t.JSXNamespacedName(t.JSXIdentifier('wx'), t.JSXIdentifier('for')),
-            t.StringLiteral(`{{${obj.trim()}}}`)
+        if (index) {
+          path.insertBefore(
+            t.JSXAttribute(
+              t.JSXNamespacedName(
+                t.JSXIdentifier('wx'),
+                t.JSXIdentifier('for-index')
+              ),
+              t.StringLiteral(index.trim())
+            )
           )
-        )
+        }
 
         path.remove()
       }

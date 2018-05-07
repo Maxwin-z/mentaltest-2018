@@ -3,12 +3,12 @@
     <grid v-bind:items="items" v-bind:cell="cell" />
     <div>Grid {{grid}}</div>
     <div>Counter{{count}}<button v-on:click="add" >Add</button></div>
-    <div v-for="(val, key, index) in array">
+    <div v-for="(val, key, index) in array" v-bind:key="key">
       val: {{val}}; 
       key: {{key}};
       index: {{index}}
     </div>
-    <div v-for="(val, key, index) in obj">
+    <div v-for="(val, key, index) in obj" v-bind:key="key">
       val: {{val}}; 
       key: {{key}};
       index: {{index}}
