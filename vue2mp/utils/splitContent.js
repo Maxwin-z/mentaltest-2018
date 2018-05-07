@@ -31,9 +31,14 @@ function splitContent(content) {
 
     lines && lines.push(line)
   })
-
+  const templateString = template.join('\n').replace(/<(.|\s)+?>/g, (tag) => {
+    return tag.replace(/\n/g, ' ').replace(/ [\w:-]+=".*?"/g, (attr) => {
+      return attr.replace(/^ :/, ' v-bind:').replace(/^ @/, ' v-on:')
+    })
+  })
+  // console.log(templateString)
   return {
-    template: template.join('\n'),
+    template: templateString,
     script: script.join('\n'),
     style: style.join('\n')
   }

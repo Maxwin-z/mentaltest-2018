@@ -1,6 +1,6 @@
 <template>
   <div>
-    <grid v-bind:items="items" v-bind:cell="cell" />
+    <grid :items="items" :cell="cell" />
     <div>Grid {{grid}}</div>
     <div>Counter{{count}}<button v-on:click="add" >Add</button></div>
     <div v-for="(val, key, index) in array" v-bind:key="key">
