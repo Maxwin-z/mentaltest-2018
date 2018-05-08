@@ -46,16 +46,17 @@ describe('ast', function() {
   })
 
   it('replaceJSXEventAttribute', () => {
-    const code = `<div v-on:click="e => click(e, item, index)" v-on:touch="e => touch(e, item)"/>`
+    const code = `<div v-on:click="e => click(e, item, index)" v-on:touch="e => touch(e, 1, 's', ['arr'])"/>`
     const ast = parse(code)
     const handlers = util.replaceJSXEventAttribute(ast)
-    // console.log(handlers)
+    // console.log(JSON.stringify(handlers, true, 2))
     assert.equal(handlers.length, 2)
     const ret = gen(ast, code, true)
+    // console.log(ret)
     assert(
       ret.indexOf(
         `
-<div v-on:click="click" data-index="{{index}}" data-item="{{item}}" v-on:touch="touch" data-item="{{item}}" />
+<div v-on:click="click" data-index="{{index}}" data-item="{{item}}" v-on:touch="touch" data-vue2mp_arg_3="{{['arr']}}" data-vue2mp_arg_2="{{'s'}}" data-vue2mp_arg_1="{{1}}" />
     `.trim()
       ) != -1
     )
@@ -251,9 +252,49 @@ Page({
     `
     const ast = parse(code)
     util.replaceEventHandlers(ast, [
-      {param: 'e', callee: 'click', args: ['e', 'item']}
+      {
+        param: 'e',
+        callee: 'click',
+        args: [
+          {
+            name: 'e',
+            value: 'e'
+          },
+          {
+            name: 'item',
+            value: 'item'
+          },
+          {
+            name: 'index',
+            value: 'index'
+          }
+        ]
+      },
+      {
+        param: 'e',
+        callee: 'touch',
+        args: [
+          {
+            name: 'e',
+            value: 'e'
+          },
+          {
+            name: 'vue2mp_arg_1',
+            value: '1'
+          },
+          {
+            name: 'vue2mp_arg_2',
+            value: "'s'"
+          },
+          {
+            name: 'vue2mp_arg_3',
+            value: "['arr']"
+          }
+        ]
+      }
     ])
     const ret = gen(ast, code)
+    console.log(ret)
     assert(
       ret.indexOf(
         `
@@ -263,11 +304,12 @@ Page({
   },
   click: function (_vue2mp_event) {
     const {
-      item
+      item,
+      index
     } = _vue2mp_event.currentTarget.dataset;
     const e = _vue2mp_event;
 
-    this._vue2mp_click(e, item);
+    this._vue2mp_click(e, item, index);
   }
 });
     `.trim()

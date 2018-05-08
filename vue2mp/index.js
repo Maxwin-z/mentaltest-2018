@@ -26,21 +26,24 @@ async function convertPage(pagename) {
   const content = fs.readFileSync(pageFile, 'utf-8')
   const {template, script, style} = utils.splitContent(content)
   // convert script
-  const {code, componentItems} = script2js(script)
+  const {codeAst, componentItems} = script2js(script)
   const components = componentItems.map((_) => _.specifier.toLowerCase())
   const pageJSON = utils.generatePageConfig(components)
   const pageDistPath = path.join(distDir, `pages/${pagename}/`)
 
   await utils.mkdirs(pageDistPath)
+  // convert template
+  const {wxml, handlers} = template2wxml(template, components)
+  await utils.writeFile(path.join(pageDistPath, `${pagename}.wxml`), wxml)
+  await astUtils.replaceEventHandlers(codeAst, handlers)
+
+  // code
+  const code = prettier.format(generator(codeAst, {}, script).code)
   await utils.writeFile(path.join(pageDistPath, `${pagename}.js`), code)
   await utils.writeFile(
     path.join(pageDistPath, `${pagename}.json`),
     JSON.stringify(pageJSON, true, 2)
   )
-
-  // convert template
-  const {wxml, handlers} = template2wxml(template, components)
-  await utils.writeFile(path.join(pageDistPath, `${pagename}.wxml`), wxml)
 
   // convert style
   await utils.writeFile(path.join(pageDistPath, `${pagename}.wxss`), style)
@@ -99,9 +102,9 @@ function script2js(script) {
   const dataProperties = astUtils.getDataProperties(ast)
   astUtils.replacePropertyAsData(ast, dataProperties)
   astUtils.moveExportToFunction(ast, 'Page')
-  const code = prettier.format(generator(ast, {}, script).code)
+  // const code = prettier.format(generator(ast, {}, script).code)
   return {
-    code,
+    codeAst: ast,
     componentItems
   }
 }

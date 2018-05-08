@@ -25,8 +25,8 @@ function replaceJSXEventAttribute(ast) {
         path.node.name.namespace &&
         path.node.name.namespace.name === 'v-on'
       ) {
-        const value = path.node.value.value
-        const expAst = babylon.parse(value, {})
+        const expValue = path.node.value.value
+        const expAst = babylon.parse(expValue, {})
         traverse(expAst, {
           ExpressionStatement(expPath) {
             if (t.isArrowFunctionExpression(expPath.get('expression'))) {
@@ -37,7 +37,22 @@ function replaceJSXEventAttribute(ast) {
               }
               const fnBody = expPath.get('expression').get('body')
               const callee = fnBody.get('callee').node.name
-              const args = fnBody.get('arguments').map((_) => _.node.name)
+              const args = fnBody.get('arguments').map((argNode, index) => {
+                if (t.isIdentifier(argNode)) {
+                  return {
+                    name: argNode.node.name,
+                    value: argNode.node.name
+                  }
+                } else {
+                  return {
+                    name: `vue2mp_arg_${index}`,
+                    value: expValue.substring(
+                      argNode.node.start,
+                      argNode.node.end
+                    )
+                  }
+                }
+              })
               // console.log(eventParam, callee, args)
               handlers.push({
                 param: eventParam,
@@ -49,11 +64,11 @@ function replaceJSXEventAttribute(ast) {
               path.node.value.value = callee
               // add args as data-[prop]
               args.forEach((arg) => {
-                if (arg != eventParam) {
+                if (arg.name != eventParam) {
                   path.insertAfter(
                     t.JSXAttribute(
-                      t.JSXIdentifier(`data-${arg}`),
-                      t.StringLiteral(`{{${arg}}}`)
+                      t.JSXIdentifier(`data-${arg.name}`),
+                      t.StringLiteral(`{{${arg.value}}}`)
                     )
                   )
                 }
@@ -443,7 +458,8 @@ function replaceEventHandlers(ast, handlers) {
         if (p.node.method === true && handlerMap[p.node.key.name]) {
           const callee = p.node.key.name
           const handler = handlerMap[callee]
-          const keys = _removeElementFromArray(handler.args, handler.param)
+          const args = handler.args.map((_) => _.name)
+          const keys = _removeElementFromArray(args, handler.param)
 
           p.node.key.name = `_vue2mp_${callee}`
           // hack origin method
@@ -489,7 +505,7 @@ function replaceEventHandlers(ast, handlers) {
                         t.ThisExpression(),
                         t.Identifier(`_vue2mp_${callee}`)
                       ),
-                      handler.args.map((arg) => t.Identifier(arg))
+                      args.map((arg) => t.Identifier(arg))
                     )
                   )
                 ])
