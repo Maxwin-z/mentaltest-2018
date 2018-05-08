@@ -45,6 +45,22 @@ describe('ast', function() {
     )
   })
 
+  it('replaceJSXEventAttribute', () => {
+    const code = `<div v-on:click="e => click(e, item, index)" v-on:touch="e => touch(e, item)"/>`
+    const ast = parse(code)
+    const handlers = util.replaceJSXEventAttribute(ast)
+    // console.log(handlers)
+    assert.equal(handlers.length, 2)
+    const ret = gen(ast, code, true)
+    assert(
+      ret.indexOf(
+        `
+<div v-on:click="click" data-index="{{index}}" data-item="{{item}}" v-on:touch="touch" data-item="{{item}}" />
+    `.trim()
+      ) != -1
+    )
+  })
+
   it('replaceJSXGenericComponent', () => {
     const code = `
     <div>
@@ -223,5 +239,39 @@ export default {
     const ret = gen(ast, code)
     assert.equal(ret, 'Page({});')
     // console.log(ret)
+  })
+
+  it('replaceEventHandlers', () => {
+    const code = `
+Page({
+  click(e, item) {
+    // do sth...
+  }
+})
+    `
+    const ast = parse(code)
+    util.replaceEventHandlers(ast, [
+      {param: 'e', callee: 'click', args: ['e', 'item']}
+    ])
+    const ret = gen(ast, code)
+    assert(
+      ret.indexOf(
+        `
+Page({
+  _vue2mp_click(e, item) {
+    // do sth...
+  },
+  click: function (_vue2mp_event) {
+    const {
+      item
+    } = _vue2mp_event.currentTarget.dataset;
+    const e = _vue2mp_event;
+
+    this._vue2mp_click(e, item);
+  }
+});
+    `.trim()
+      ) != -1
+    )
   })
 })

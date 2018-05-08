@@ -1,3 +1,4 @@
+const babylon = require('babylon')
 const traverse = require('@babel/traverse').default
 const t = require('babel-types')
 
@@ -14,6 +15,56 @@ function replaceJSXTag(ast, tagMap) {
       }
     }
   })
+}
+
+function replaceJSXEventAttribute(ast) {
+  const handlers = []
+  traverse(ast, {
+    JSXAttribute(path) {
+      if (
+        path.node.name.namespace &&
+        path.node.name.namespace.name === 'v-on'
+      ) {
+        const value = path.node.value.value
+        const expAst = babylon.parse(value, {})
+        traverse(expAst, {
+          ExpressionStatement(expPath) {
+            if (t.isArrowFunctionExpression(expPath.get('expression'))) {
+              let eventParam = null
+              const params = expPath.get('expression').get('params')
+              if (params.length > 0) {
+                eventParam = params[0].node.name
+              }
+              const fnBody = expPath.get('expression').get('body')
+              const callee = fnBody.get('callee').node.name
+              const args = fnBody.get('arguments').map((_) => _.node.name)
+              // console.log(eventParam, callee, args)
+              handlers.push({
+                param: eventParam,
+                callee,
+                args
+              })
+
+              // replace body
+              path.node.value.value = callee
+              // add args as data-[prop]
+              args.forEach((arg) => {
+                if (arg != eventParam) {
+                  path.insertAfter(
+                    t.JSXAttribute(
+                      t.JSXIdentifier(`data-${arg}`),
+                      t.StringLiteral(`{{${arg}}}`)
+                    )
+                  )
+                }
+              })
+            }
+          }
+        })
+      }
+    }
+  })
+  return handlers
 }
 
 function replaceJSXAttribute(ast, components) {
@@ -371,8 +422,89 @@ function moveExportToFunction(ast, fnName) {
   })
 }
 
+function _removeElementFromArray(arr, ele) {
+  const cloneArr = arr.concat([])
+  const index = cloneArr.indexOf(ele)
+  if (index > -1) {
+    cloneArr.splice(index, 1)
+  }
+  return cloneArr
+}
+
+function replaceEventHandlers(ast, handlers) {
+  const handlerMap = {}
+  handlers.forEach((h) => {
+    handlerMap[h.callee] = h
+  })
+  traverse(ast, {
+    ObjectExpression(path) {
+      path.skip()
+      path.get('properties').forEach((p) => {
+        if (p.node.method === true && handlerMap[p.node.key.name]) {
+          const callee = p.node.key.name
+          const handler = handlerMap[callee]
+          const keys = _removeElementFromArray(handler.args, handler.param)
+
+          p.node.key.name = `_vue2mp_${callee}`
+          // hack origin method
+          p.insertAfter(
+            t.ObjectProperty(
+              t.Identifier(callee),
+              t.FunctionExpression(
+                null,
+                [t.Identifier('_vue2mp_event')],
+                t.BlockStatement([
+                  t.VariableDeclaration('const', [
+                    t.VariableDeclarator(
+                      t.ObjectPattern(
+                        keys.map((key) =>
+                          t.ObjectProperty(
+                            t.Identifier(key),
+                            t.Identifier(key),
+                            false,
+                            true
+                          )
+                        )
+                      ),
+                      t.MemberExpression(
+                        t.MemberExpression(
+                          t.Identifier('_vue2mp_event'),
+                          t.Identifier('currentTarget')
+                        ),
+                        t.Identifier('dataset')
+                      )
+                    )
+                  ]),
+                  handler.param
+                    ? t.VariableDeclaration('const', [
+                        t.VariableDeclarator(
+                          t.Identifier(handler.param),
+                          t.Identifier('_vue2mp_event')
+                        )
+                      ])
+                    : t.ExpressionStatement(t.StringLiteral('')),
+                  t.ExpressionStatement(
+                    t.CallExpression(
+                      t.MemberExpression(
+                        t.ThisExpression(),
+                        t.Identifier(`_vue2mp_${callee}`)
+                      ),
+                      handler.args.map((arg) => t.Identifier(arg))
+                    )
+                  )
+                ])
+              )
+            )
+          )
+        }
+      })
+    }
+  })
+}
+
 module.exports = {
   replaceJSXTag,
+  replaceJSXEventAttribute,
   replaceJSXAttribute,
   replaceJSXGenericComponent,
   replaceJSXFor,
@@ -384,5 +516,6 @@ module.exports = {
   getDataProperties,
   removeDataPropertiesByValue,
   replacePropertyAsData,
-  moveExportToFunction
+  moveExportToFunction,
+  replaceEventHandlers
 }

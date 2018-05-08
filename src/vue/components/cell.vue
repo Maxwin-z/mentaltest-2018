@@ -1,5 +1,5 @@
 <template>
-  <div class="item" v-on:click="click">
+  <div class="item" v-on:click="e => click(e, title)">
     <div>Icon Img</div>
     <div>{{title}}</div>
   </div>
@@ -14,7 +14,7 @@ export default {
   },
   methods: {
     click(e) {
-      console.log(e, this.title)
+      console.log(arguments)
     }
   }
 }

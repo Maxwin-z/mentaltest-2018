@@ -39,7 +39,7 @@ async function convertPage(pagename) {
   )
 
   // convert template
-  const {wxml} = template2wxml(template, components)
+  const {wxml, handlers} = template2wxml(template, components)
   await utils.writeFile(path.join(pageDistPath, `${pagename}.wxml`), wxml)
 
   // convert style
@@ -116,6 +116,7 @@ function template2wxml(template, components) {
     div: 'view'
   }
   astUtils.replaceJSXTag(ast, tagMap)
+  const handlers = astUtils.replaceJSXEventAttribute(ast)
   astUtils.replaceJSXAttribute(ast, components)
   astUtils.replaceJSXFor(ast)
   const genericMap = astUtils.replaceJSXGenericComponent(ast)
@@ -127,7 +128,8 @@ function template2wxml(template, components) {
         semi: false
       })
       .replace(/^;/, ''),
-    componentGenerics: genericMap
+    componentGenerics: genericMap,
+    handlers
   }
 }
 
