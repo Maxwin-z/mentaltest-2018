@@ -30,7 +30,7 @@ export default {
     return {
       count: 0,
       cell: cell,
-      grid: 'test',
+      grid: 'this is test data',
       array: [1, 2, 3, 4],
       obj: {
         a: 1,

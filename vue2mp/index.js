@@ -9,8 +9,13 @@ const astUtils = require('./utils/ast')
 const vueDir = path.join(__dirname, '../src/vue')
 const distDir = path.join(__dirname, '../dist')
 
-const pagename = 'homepage'
-convertPage(pagename)
+// const pagename = 'homepage'
+// convertPage(pagename)
+
+module.exports = {
+  convertPage,
+  convertComponent
+}
 
 process.on('unhandledRejection', (error) => {
   console.error('unhandledRejection', error)

@@ -1,6 +1,6 @@
 <template>
   <div class="item" v-on:click="click">
-    <div>Icon</div>
+    <div>Icon Img</div>
     <div>{{title}}</div>
   </div>
 </template>
