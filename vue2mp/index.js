@@ -26,7 +26,7 @@ async function convertPage(pagename) {
   const content = fs.readFileSync(pageFile, 'utf-8')
   const {template, script, style} = utils.splitContent(content)
   // convert script
-  const {codeAst, componentItems} = script2js(script)
+  const {codeAst, componentItems} = script2js(script, false)
   const components = componentItems.map((_) => _.specifier.toLowerCase())
   const pageJSON = utils.generatePageConfig(components)
   const pageDistPath = path.join(distDir, `pages/${pagename}/`)
@@ -54,23 +54,33 @@ async function convertPage(pagename) {
 }
 
 async function convertComponent(component) {
-  // console.log(`start convertComponent ${component}`)
+  console.log(`start convertComponent ${component}`)
   const compFile = path.join(vueDir, `/components/${component}.vue`)
   const content = fs.readFileSync(compFile, 'utf-8')
   const {template, script, style} = utils.splitContent(content)
   // console.log(template)
-  const {code, componentItems} = componentScript2js(script)
+  const {codeAst, componentItems} = script2js(script, true)
   const components = componentItems.map((_) => _.specifier)
   const compJSON = utils.generatePageConfig(components)
   const compDistPath = path.join(distDir, `components/${component}/`)
 
   await utils.mkdirs(compDistPath)
+
+  // wxml
+  const {wxml, componentGenerics, handlers} = template2wxml(
+    template,
+    components
+  )
+  astUtils.replaceEventHandlers(codeAst, handlers)
+
+  // code
+  const code = prettier.format(generator(codeAst, {}, script).code)
   await utils.writeFile(path.join(compDistPath, `${component}.js`), code)
   await utils.writeFile(
     path.join(compDistPath, `${component}.json`),
     JSON.stringify(compJSON, true, 2)
   )
-  const {wxml, componentGenerics} = template2wxml(template, components)
+
   await utils.writeFile(path.join(compDistPath, `${component}.wxml`), wxml)
   await utils.writeFile(path.join(compDistPath, `${component}.wxss`), style)
   await utils.writeFile(
@@ -87,7 +97,7 @@ async function convertComponent(component) {
   )
 }
 
-function script2js(script) {
+function script2js(script, isComponent) {
   const ast = babylon.parse(script, {
     sourceType: 'module',
     plugins: ['jsx', 'flow']
@@ -96,12 +106,19 @@ function script2js(script) {
   const componentItems = astUtils.getImportedComponents(ast)
   const components = componentItems.map((_) => _.specifier)
   astUtils.removeImports(ast, components)
-  astUtils.moveMethodsOut(ast)
+  if (isComponent) {
+    astUtils.renameProperty(ast, {
+      props: 'properties'
+    })
+  } else {
+    astUtils.moveMethodsOut(ast)
+  }
+
   astUtils.moveDataOut(ast)
   astUtils.removeDataPropertiesByValue(ast, components)
   const dataProperties = astUtils.getDataProperties(ast)
   astUtils.replacePropertyAsData(ast, dataProperties)
-  astUtils.moveExportToFunction(ast, 'Page')
+  astUtils.moveExportToFunction(ast, isComponent ? 'Component' : 'Page')
   // const code = prettier.format(generator(ast, {}, script).code)
   return {
     codeAst: ast,
@@ -155,9 +172,9 @@ function componentScript2js(script) {
   const dataProperties = astUtils.getDataProperties(ast)
   astUtils.replacePropertyAsData(ast, dataProperties)
   astUtils.moveExportToFunction(ast, 'Component')
-  const code = prettier.format(generator(ast, {}, script).code)
+  // const code = prettier.format(generator(ast, {}, script).code)
   return {
-    code,
+    codeAst: ast,
     componentItems
   }
 }

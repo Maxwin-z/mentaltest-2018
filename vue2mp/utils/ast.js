@@ -458,72 +458,84 @@ function _removeElementFromArray(arr, ele) {
   return cloneArr
 }
 
-function replaceEventHandlers(ast, handlers) {
+function _hackEventHandlers(path, handlers) {
   const handlerMap = {}
   handlers.forEach((h) => {
     handlerMap[h.callee] = h
   })
+
+  path.get('properties').forEach((p) => {
+    if (p.node.method === true && handlerMap[p.node.key.name]) {
+      const callee = p.node.key.name
+      const handler = handlerMap[callee]
+      const args = handler.args.map((_) => _.name)
+      const keys = _removeElementFromArray(args, handler.param)
+
+      p.node.key.name = `_vuetomp_${callee}`
+      // hack origin method
+      p.insertAfter(
+        t.ObjectProperty(
+          t.Identifier(callee),
+          t.FunctionExpression(
+            null,
+            [t.Identifier('_vuetomp_event')],
+            t.BlockStatement([
+              t.VariableDeclaration('const', [
+                t.VariableDeclarator(
+                  t.ObjectPattern(
+                    keys.map((key) =>
+                      t.ObjectProperty(
+                        t.Identifier(key),
+                        t.Identifier(key),
+                        false,
+                        true
+                      )
+                    )
+                  ),
+                  t.MemberExpression(
+                    t.MemberExpression(
+                      t.Identifier('_vuetomp_event'),
+                      t.Identifier('currentTarget')
+                    ),
+                    t.Identifier('dataset')
+                  )
+                )
+              ]),
+              handler.param
+                ? t.VariableDeclaration('const', [
+                    t.VariableDeclarator(
+                      t.Identifier(handler.param),
+                      t.Identifier('_vuetomp_event')
+                    )
+                  ])
+                : t.ExpressionStatement(t.StringLiteral('')),
+              t.ExpressionStatement(
+                t.CallExpression(
+                  t.MemberExpression(
+                    t.ThisExpression(),
+                    t.Identifier(`_vuetomp_${callee}`)
+                  ),
+                  args.map((arg) => t.Identifier(arg))
+                )
+              )
+            ])
+          )
+        )
+      )
+    }
+  })
+}
+function replaceEventHandlers(ast, handlers) {
   traverse(ast, {
     ObjectExpression(path) {
       path.skip()
+      _hackEventHandlers(path, handlers)
+      // hack component methods
+      console.log(534)
       path.get('properties').forEach((p) => {
-        if (p.node.method === true && handlerMap[p.node.key.name]) {
-          const callee = p.node.key.name
-          const handler = handlerMap[callee]
-          const args = handler.args.map((_) => _.name)
-          const keys = _removeElementFromArray(args, handler.param)
-
-          p.node.key.name = `_vuetomp_${callee}`
-          // hack origin method
-          p.insertAfter(
-            t.ObjectProperty(
-              t.Identifier(callee),
-              t.FunctionExpression(
-                null,
-                [t.Identifier('_vuetomp_event')],
-                t.BlockStatement([
-                  t.VariableDeclaration('const', [
-                    t.VariableDeclarator(
-                      t.ObjectPattern(
-                        keys.map((key) =>
-                          t.ObjectProperty(
-                            t.Identifier(key),
-                            t.Identifier(key),
-                            false,
-                            true
-                          )
-                        )
-                      ),
-                      t.MemberExpression(
-                        t.MemberExpression(
-                          t.Identifier('_vuetomp_event'),
-                          t.Identifier('currentTarget')
-                        ),
-                        t.Identifier('dataset')
-                      )
-                    )
-                  ]),
-                  handler.param
-                    ? t.VariableDeclaration('const', [
-                        t.VariableDeclarator(
-                          t.Identifier(handler.param),
-                          t.Identifier('_vuetomp_event')
-                        )
-                      ])
-                    : t.ExpressionStatement(t.StringLiteral('')),
-                  t.ExpressionStatement(
-                    t.CallExpression(
-                      t.MemberExpression(
-                        t.ThisExpression(),
-                        t.Identifier(`_vuetomp_${callee}`)
-                      ),
-                      args.map((arg) => t.Identifier(arg))
-                    )
-                  )
-                ])
-              )
-            )
-          )
+        if (p.node.key.name === 'methods') {
+          console.log('in methods')
+          _hackEventHandlers(p.get('value'), handlers)
         }
       })
     }

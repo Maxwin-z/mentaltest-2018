@@ -13,8 +13,8 @@ export default {
     }
   },
   methods: {
-    click(e) {
-      console.log(arguments)
+    click(e, title) {
+      console.log(e, title)
     }
   }
 }
