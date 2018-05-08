@@ -17,6 +17,16 @@ function replaceJSXTag(ast, tagMap) {
   })
 }
 
+function _int2abc(n) {
+  let i = n
+  let ret = []
+  do {
+    ret.unshift(String.fromCharCode(97 + i % 26))
+    i = Number.parseInt(i / 26)
+  } while (i > 0)
+  return ret.join('')
+}
+
 function replaceJSXEventAttribute(ast) {
   const handlers = []
   traverse(ast, {
@@ -44,8 +54,10 @@ function replaceJSXEventAttribute(ast) {
                     value: argNode.node.name
                   }
                 } else {
+                  // mp not allow number in varname
+                  const name = 'vuetomp_arg_' + _int2abc(index)
                   return {
-                    name: `vue2mp_arg_${index}`,
+                    name,
                     value: expValue.substring(
                       argNode.node.start,
                       argNode.node.end
@@ -461,14 +473,14 @@ function replaceEventHandlers(ast, handlers) {
           const args = handler.args.map((_) => _.name)
           const keys = _removeElementFromArray(args, handler.param)
 
-          p.node.key.name = `_vue2mp_${callee}`
+          p.node.key.name = `_vuetomp_${callee}`
           // hack origin method
           p.insertAfter(
             t.ObjectProperty(
               t.Identifier(callee),
               t.FunctionExpression(
                 null,
-                [t.Identifier('_vue2mp_event')],
+                [t.Identifier('_vuetomp_event')],
                 t.BlockStatement([
                   t.VariableDeclaration('const', [
                     t.VariableDeclarator(
@@ -484,7 +496,7 @@ function replaceEventHandlers(ast, handlers) {
                       ),
                       t.MemberExpression(
                         t.MemberExpression(
-                          t.Identifier('_vue2mp_event'),
+                          t.Identifier('_vuetomp_event'),
                           t.Identifier('currentTarget')
                         ),
                         t.Identifier('dataset')
@@ -495,7 +507,7 @@ function replaceEventHandlers(ast, handlers) {
                     ? t.VariableDeclaration('const', [
                         t.VariableDeclarator(
                           t.Identifier(handler.param),
-                          t.Identifier('_vue2mp_event')
+                          t.Identifier('_vuetomp_event')
                         )
                       ])
                     : t.ExpressionStatement(t.StringLiteral('')),
@@ -503,7 +515,7 @@ function replaceEventHandlers(ast, handlers) {
                     t.CallExpression(
                       t.MemberExpression(
                         t.ThisExpression(),
-                        t.Identifier(`_vue2mp_${callee}`)
+                        t.Identifier(`_vuetomp_${callee}`)
                       ),
                       args.map((arg) => t.Identifier(arg))
                     )
@@ -533,5 +545,6 @@ module.exports = {
   removeDataPropertiesByValue,
   replacePropertyAsData,
   moveExportToFunction,
-  replaceEventHandlers
+  replaceEventHandlers,
+  _int2abc
 }

@@ -2,7 +2,7 @@
   <div>
     <grid :items="items" :cell="cell" />
     <div>Grid {{grid}}</div>
-    <div>Counter{{count}}<button v-on:click="e => add(e, item)" >Add</button></div>
+    <div>Counter{{count}}<button v-on:click="e => add(e, 3, [], 'str')" >Add</button></div>
     <div v-for="(val, key, index) in array" v-bind:key="key">
       val: {{val}}; 
       key: {{key}};
@@ -41,13 +41,11 @@ export default {
     }
   },
   methods: {
-    add(e, item) {
-      console.log(e, item)
+    add(e, n, arr, str) {
+      console.log(e, n, arr, str)
       let c = this.count
-      ++c
+      c += n
       this.count = c
-
-      ++this.count
     },
     minus(delta) {
       this.count -= delta

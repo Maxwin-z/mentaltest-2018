@@ -19,6 +19,12 @@ function gen(ast, code, isJSX = false) {
   return ret
 }
 
+describe('functional', function() {
+  it('int2abc', () => {
+    for (let i = 0; i < 100; ++i) console.log(util._int2abc(i))
+  })
+})
+
 describe('ast', function() {
   it('ok', () => {
     assert.equal('ok', 'ok')
