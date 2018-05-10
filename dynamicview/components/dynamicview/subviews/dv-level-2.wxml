@@ -1,0 +1,18 @@
+<block wx:for="{{nodes}}" wx:for-item="node" wx:key="">
+  <block wx:if="{{node.tag === 'view'}}">
+    <view>
+      <subview nodes="{{node.children || []}}" />
+    </view>
+  </block>
+  <text wx:if="{{node.tag === 'text'}}" 
+    style="{{node.style || ''}}"
+    bindtap="ontap"
+    data-data="{{node.data}}"
+    >{{node.value}}</text>
+  <image wx:if="{{node.tag === 'image'}}" 
+    style="{{node.style || ''}}"
+    bindtap="ontap"
+    data-data="{{node.data}}"
+    src="{{node.src}}" 
+    width="{{node.width || 'auto'}}" />
+</block>

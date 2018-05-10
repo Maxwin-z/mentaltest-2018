@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "subview": "./dv-level-3"
+  }
+}

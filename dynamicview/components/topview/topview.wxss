@@ -1,0 +1,5 @@
+.top {
+  color: white;
+  padding: 10rpx;
+  background: blue;
+}

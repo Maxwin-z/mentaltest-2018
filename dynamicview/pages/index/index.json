@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "topview": "../../components/topview/topview",
+    "bottomview": "../../components/bottomview/bottomview",
+    "dynamicview": "../../components/dynamicview/dynamicview"
+  }
+}

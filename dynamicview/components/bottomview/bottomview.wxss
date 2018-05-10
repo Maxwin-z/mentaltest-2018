@@ -1,0 +1,5 @@
+.bottom {
+  color: white;
+  padding: 10rpx;
+  background: brown;
+}

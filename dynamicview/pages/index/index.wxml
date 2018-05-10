@@ -1,0 +1,7 @@
+<view>
+  <topview />
+  
+  <dynamicview nodes="{{nodes}}" />
+  
+  <bottomview />
+</view>
