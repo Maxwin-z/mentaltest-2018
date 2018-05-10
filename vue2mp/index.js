@@ -54,7 +54,7 @@ async function convertPage(pagename) {
 }
 
 async function convertComponent(component) {
-  console.log(`start convertComponent ${component}`)
+  // console.log(`start convertComponent ${component}`)
   const compFile = path.join(vueDir, `/components/${component}.vue`)
   const content = fs.readFileSync(compFile, 'utf-8')
   const {template, script, style} = utils.splitContent(content)

@@ -531,10 +531,8 @@ function replaceEventHandlers(ast, handlers) {
       path.skip()
       _hackEventHandlers(path, handlers)
       // hack component methods
-      console.log(534)
       path.get('properties').forEach((p) => {
         if (p.node.key.name === 'methods') {
-          console.log('in methods')
           _hackEventHandlers(p.get('value'), handlers)
         }
       })

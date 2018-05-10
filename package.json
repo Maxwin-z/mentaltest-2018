@@ -4,7 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "babel-watch koa.js"
+    "start":
+      "cp -r test/mptpl dist && node vue2mp/example.js && babel-watch koa.js"
   },
   "dependencies": {
     "@babel/traverse": "^7.0.0-beta.46",
@@ -31,13 +32,8 @@
     "webpack-cli": "^2.0.15"
   },
   "babel": {
-    "presets": [
-      "es2015",
-      "react"
-    ],
-    "plugins": [
-      "transform-runtime"
-    ]
+    "presets": ["es2015", "react"],
+    "plugins": ["transform-runtime"]
   },
   "devDependencies": {
     "babel-plugin-transform-runtime": "^6.23.0",
